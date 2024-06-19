@@ -68,6 +68,7 @@
 			<version>1.2.70</version>
 			<scope>compile</scope>
 		</dependency>
+		<!-- 该库提供了读取、写入和处理YAML格式数据的功能。 -->
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
@@ -102,6 +103,8 @@
 			<artifactId>javase</artifactId>
 			<version>3.4.1</version>
 		</dependency>
+		<!-- 这段代码是Maven项目的依赖配置，用于引入名为uasparser的第三方库，
+		版本号为0.6.2。该库用于解析用户代理字符串，识别浏览器、操作系统等信息。 -->
 		<dependency>
 			<groupId>cz.mallat.uasparser</groupId>
 			<artifactId>uasparser</artifactId>
