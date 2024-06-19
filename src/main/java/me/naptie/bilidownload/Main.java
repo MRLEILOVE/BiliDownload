@@ -23,34 +23,79 @@ import java.util.*;
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class Main {
 
-	public static boolean debug, hint, isFileInput;
+	// 定义全局静态布尔变量debug，用于控制程序的调试状态
+	public static boolean debug;
+
+	// 定义全局静态布尔变量hint，用于控制是否显示提示信息
+	public static boolean hint;
+
+	// 定义全局静态布尔变量isFileInput，用于标记程序是否从文件中输入数据
+	public static boolean isFileInput;
+
+	// 定义全局静态Scanner对象，用于程序的输入操作
 	private static Scanner scanner;
+
+	// 定义全局静态File对象，用于程序配置文件的存储和访问
 	private static File config;
+
+	// 定义全局静态长整型变量beginTime，用于记录程序的开始时间，用于性能分析
 	private static long beginTime;
 
+
+	/**
+	 * 程序的入口点。
+	 * 根据传入的命令行参数决定程序的执行路径：直接下载或调试模式。
+	 * 使用配置文件来设置程序的行为。
+	 * java -jar bili-download-1.3.6-jar-with-dependencies.jar
+	 * direct "http://upos-sz-mirrorkodo.bilivideo.com/upgcxcode/90/37/315703790/315703790-1-30336.m4s?e=ig8euxZM2rNcNbdlhoNvNC8BqJIzNbfqXBvEuENvNC8aNEVEtEvE9IMvXBvE2ENvNCImNEVEIj0Y2J_aug859r1qXg8gNEVE5XREto8z5JZC2X2gkX5L5F1eTX1jkXlsTXHeux_f2o859IB_&ua=tvproj&uipk=5&nbs=1&deadline=1622289611&gen=playurlv2&os=kodobv&oi=2078815810&trid=b7708dc7ef174e5bbe4fba32f5418517t&upsig=29cbb17759b52b6499638195bf0861aa&uparams=e,ua,uipk,nbs,deadline,gen,os,oi,trid&mid=474403243&bvc=vod&orderid=0,1&logo=80000000"
+	 * "D:\BiliDownload\快住手！这根本不是 Kawaii Bass！_ 恋のうた Remix 工程演示.mp4"
+	 *
+	 * @param args 命令行参数，包括直接下载的URL和路径，或者调试模式的标志。
+	 * @throws IOException 如果读取配置文件发生错误。
+	 * @throws InterruptedException 如果线程被中断。
+	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
+		// 记录程序开始时间
 		beginTime = System.currentTimeMillis();
+		// 初始化配置文件
 		config = new File("config.yml");
+
+		// 检查是否直接从URL下载
 		if (args.length > 2 && args[0].equalsIgnoreCase("direct")) {
 			String url = args[1];
 			String path = args[2];
+			// 从URL下载文件
 			downloadFromUrl(url, path);
+			// 输出程序运行时间并退出
 			System.out.println("\n程序运行结束；总运行时间：" + getFormattedTime(System.currentTimeMillis() - beginTime));
 			System.exit(0);
 		}
+
+		// 设置调试模式
 		debug = args.length > 0 && args[0].equalsIgnoreCase("debug");
+		// 初始化输入设备
 		setScanner();
+		// 获取视频ID
 		String id = getNumber();
+		// 登录视频网站
 		String[] login = login();
+		// 获取视频信息
 		JSONObject info = getVideoInfo(id, login[0], !login[1].isEmpty());
+		// 指定下载的视频内容
 		Object[] specified = specify(info);
+		// 获取视频的分辨率信息
 		Object[] details = getResolutions(info, login, !login[1].isEmpty(), (int) specified[0]);
+		// 设置下载路径
 		String[] path = getPath((String) specified[1]);
+		// 为路径添加视频分辨率信息
 		path[1] += " [" + details[4] + "]";
+		// 开始下载视频
 		download(details, path);
+		// 输出程序运行时间并退出
 		System.out.println("\n程序运行结束；总运行时间：" + getFormattedTime(System.currentTimeMillis() - beginTime));
 		System.exit(0);
 	}
+
 
 	private static void setScanner() throws FileNotFoundException {
 		File input = new File("Input.txt");
@@ -211,25 +256,44 @@ public class Main {
 		return new String[]{cookie, accessToken};
 	}
 
+	/**
+	 * 根据视频ID和Cookie获取视频信息。
+	 * @param id 视频的AV号或BV号。
+	 * @param cookie 用于身份验证的Cookie。
+	 * @param tv 是否为TV版接口。
+	 * @return 包含视频信息的JSONObject。
+	 * @throws IOException 如果发生I/O错误。
+	 */
 	private static JSONObject getVideoInfo(String id, String cookie, boolean tv) throws IOException {
-		System.out.println((hint ? "\n" : "") + "正在获取稿件信息······");
-		JSONObject info = HttpManager.readJsonFromUrl("https://api.bilibili.com/x/web-interface/view?" + (id.toLowerCase().startsWith("av") ? "aid=" + id.substring(2) : "bvid=" + id), tv ? "#" : cookie, tv);
-		if (info.getIntValue("code") != 0) {
-			System.out.println(info.getString("message"));
-			System.out.println("\n程序运行结束，错误代码：" + info.getIntValue("code") + "；总运行时间：" + getFormattedTime(System.currentTimeMillis() - beginTime));
-			System.exit(info.getIntValue("code"));
-		} else {
-			info = info.getJSONObject("data");
-		}
-		System.out.println("\n标题：" + info.getString("title"));
-		System.out.println("UP主：" + info.getJSONObject("owner").getString("name"));
-		System.out.println("时长：" + getFormattedTime(info.getIntValue("duration"), info.getIntValue("duration") > 3600));
-		System.out.println("播放：" + String.format("%,d", info.getJSONObject("stat").getIntValue("view")));
-		System.out.println("弹幕：" + String.format("%,d", info.getJSONObject("stat").getIntValue("danmaku")));
-		System.out.println("获赞：" + String.format("%,d", info.getJSONObject("stat").getIntValue("like")));
-		System.out.println("投币：" + String.format("%,d", info.getJSONObject("stat").getIntValue("coin")));
-		System.out.println("收藏：" + String.format("%,d", info.getJSONObject("stat").getIntValue("favorite")));
-		return info;
+	    // 输出提示信息，说明正在获取视频信息
+	    System.out.println((hint ? "\n" : "") + "正在获取稿件信息······");
+
+	    // 根据ID的类型（AV号或BV号）构造API请求URL，并发送请求获取视频信息
+	    JSONObject info = HttpManager.readJsonFromUrl("https://api.bilibili.com/x/web-interface/view?" + (id.toLowerCase().startsWith("av") ? "aid=" + id.substring(2) : "bvid=" + id),
+				tv ? "#" : cookie, tv);
+
+	    // 如果返回码不为0，表示请求失败，输出错误信息并退出程序
+	    if (info.getIntValue("code") != 0) {
+	        System.out.println(info.getString("message"));
+	        System.out.println("\n程序运行结束，错误代码：" + info.getIntValue("code") + "；总运行时间：" + getFormattedTime(System.currentTimeMillis() - beginTime));
+	        System.exit(info.getIntValue("code"));
+	    } else {
+	        // 如果请求成功，进一步获取视频的具体信息
+	        info = info.getJSONObject("data");
+	    }
+
+	    // 输出视频的标题、UP主、时长、播放量、弹幕量、获赞数、投币数和收藏数
+	    System.out.println("\n标题：" + info.getString("title"));
+	    System.out.println("UP主：" + info.getJSONObject("owner").getString("name"));
+	    System.out.println("时长：" + getFormattedTime(info.getIntValue("duration"), info.getIntValue("duration") > 3600));
+	    System.out.println("播放：" + String.format("%,d", info.getJSONObject("stat").getIntValue("view")));
+	    System.out.println("弹幕：" + String.format("%,d", info.getJSONObject("stat").getIntValue("danmaku")));
+	    System.out.println("获赞：" + String.format("%,d", info.getJSONObject("stat").getIntValue("like")));
+	    System.out.println("投币：" + String.format("%,d", info.getJSONObject("stat").getIntValue("coin")));
+	    System.out.println("收藏：" + String.format("%,d", info.getJSONObject("stat").getIntValue("favorite")));
+
+	    // 返回包含视频信息的JSONObject
+	    return info;
 	}
 
 	private static Object[] specify(JSONObject info) {
