@@ -296,31 +296,48 @@ public class Main {
 	    return info;
 	}
 
+	/**
+	 * 根据提供的JSONObject，指定并返回视频的CID和名称。
+	 * 如果视频有多个分P，则允许用户选择具体的分P。
+	 *
+	 * @param info 包含视频信息的JSONObject，必须包含"title"、"videos"、"pages"等字段。
+	 * @return 包含CID和名称的对象数组，名称中会包含所选分P的信息。
+	 */
 	private static Object[] specify(JSONObject info) {
-		int cid;
-		String name = info.getString("title");
-		if (info.getIntValue("videos") > 1) {
-			JSONArray pages = info.getJSONArray("pages");
-			System.out.println("\n分P：");
-			for (int i = 0; i < pages.size(); i++) {
-				System.out.println(String.format("%3d", (i + 1)) + ". P" + String.format("%-5d", pages.getJSONObject(i).getIntValue("page")) + "CID：" + pages.getJSONObject(i).getIntValue("cid") + "  时长：" + getFormattedTime(pages.getJSONObject(i).getIntValue("duration"), pages.getJSONObject(i).getIntValue("duration") >= 3600) + "  标题：" + pages.getJSONObject(i).getString("part"));
-			}
-			if (hint) System.out.println("请选择分P（输入 1~" + pages.size() + " 之间的整数）：");
-			int part = inputInt();
-			if (part > pages.size()) {
-				System.out.println("输入的数字“" + part + "”太大，已为您选择末尾的分P " + pages.getJSONObject(pages.size() - 1).getString("part"));
-				part = pages.size();
-			}
-			if (part < 1) {
-				System.out.println("输入的数字“" + part + "”太小，已为您选择开头的分P " + pages.getJSONObject(0).getString("part"));
-				part = 1;
-			}
-			cid = pages.getJSONObject(part - 1).getIntValue("cid");
-			name += " [P" + part + "] " + pages.getJSONObject(part - 1).getString("part");
-		} else {
-			cid = info.getIntValue("cid");
-		}
-		return new Object[]{cid, name};
+	    int cid;
+	    // 获取视频标题
+	    String name = info.getString("title");
+
+	    // 判断视频是否有多个分P
+	    if (info.getIntValue("videos") > 1) {
+	        // 获取分P信息
+	        JSONArray pages = info.getJSONArray("pages");
+	        // 打印分P列表
+	        System.out.println("\n分P：");
+	        for (int i = 0; i < pages.size(); i++) {
+	            System.out.println(String.format("%3d", (i + 1)) + ". P" + String.format("%-5d", pages.getJSONObject(i).getIntValue("page")) + "CID：" + pages.getJSONObject(i).getIntValue("cid") + "  时长：" + getFormattedTime(pages.getJSONObject(i).getIntValue("duration"), pages.getJSONObject(i).getIntValue("duration") >= 3600) + "  标题：" + pages.getJSONObject(i).getString("part"));
+	        }
+	        // 提示用户选择分P
+	        if (hint) System.out.println("请选择分P（输入 1~" + pages.size() + " 之间的整数）：");
+	        int part = inputInt();
+	        // 对用户输入的分P编号进行验证和修正
+	        if (part > pages.size()) {
+	            System.out.println("输入的数字“" + part + "”太大，已为您选择末尾的分P " + pages.getJSONObject(pages.size() - 1).getString("part"));
+	            part = pages.size();
+	        }
+	        if (part < 1) {
+	            System.out.println("输入的数字“" + part + "”太小，已为您选择开头的分P " + pages.getJSONObject(0).getString("part"));
+	            part = 1;
+	        }
+	        // 根据用户选择，获取CID和分P名称
+	        cid = pages.getJSONObject(part - 1).getIntValue("cid");
+	        name += " [P" + part + "] " + pages.getJSONObject(part - 1).getString("part");
+	    } else {
+	        // 如果视频只有一个分P，则直接获取CID
+	        cid = info.getIntValue("cid");
+	    }
+	    // 返回CID和名称
+	    return new Object[]{cid, name};
 	}
 
 	private static Object[] getResolutions(JSONObject info, String[] auth, boolean tv, int cid) throws IOException {
